@@ -25,25 +25,10 @@ namespace Shadowsocks.View
             public readonly bool deprecated;
 
             // Edit here to add/delete encryption method displayed in UI
-            private static string[] deprecatedMethod = new string[]
-            {
-                "rc4-md5",
-                "salsa20",
-                "chacha20",
-                "bf-cfb",
-                "chacha20-ietf",
-                "aes-256-cfb",
-                "aes-192-cfb",
-                "aes-128-cfb",
-                "aes-256-ctr",
-                "aes-192-ctr",
-                "aes-128-ctr",
-                "camellia-256-cfb",
-                "camellia-192-cfb",
-                "camellia-128-cfb",
-            };
             private static string[] inuseMethod = new string[]
             {
+                "none",
+                "plain",
                 "aes-256-gcm",
                 "aes-192-gcm",
                 "aes-128-gcm",
@@ -66,7 +51,6 @@ namespace Shadowsocks.View
                 var all = new List<EncryptionMethod>();
 
                 all.AddRange(inuseMethod.Select(i => new EncryptionMethod(i, false)));
-                all.AddRange(deprecatedMethod.Select(d => new EncryptionMethod(d, true)));
 
                 allMethods = all.ToArray();
                 foreach (var item in all)
@@ -107,9 +91,6 @@ namespace Shadowsocks.View
             InitializeComponent();
             EncryptionSelect.Items.AddRange(EncryptionMethod.AllMethods);
 
-            // a dirty hack
-            ServersListBox.Dock = DockStyle.Fill;
-            tableLayoutPanel5.Dock = DockStyle.Fill;
             PerformLayout();
 
             UpdateTexts();
@@ -206,6 +187,7 @@ namespace Shadowsocks.View
                     plugin_args = PluginArgumentsTextBox.Text,
                     remarks = RemarksTextBox.Text,
                     timeout = timeout.Value,
+                    group = GroupTextBox.Text
                 };
 
                 return true;
@@ -312,7 +294,7 @@ namespace Shadowsocks.View
         {
             password = null;
             string outPassword;
-            if ((outPassword = PasswordTextBox.Text).IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(outPassword = PasswordTextBox.Text))
             {
                 if (!isSave && !isCopy && ServersListBox.Items.Count > 1 && I18N.GetString("New server").Equals(ServersListBox.Items[_lastSelectedIndex].ToString()))
                 {
@@ -413,6 +395,8 @@ namespace Shadowsocks.View
             RemarksTextBox.Text = server.remarks;
             TimeoutTextBox.Text = server.timeout.ToString();
 
+            GroupTextBox.Text = server.group;
+
             isChange = false;
         }
 
@@ -427,13 +411,13 @@ namespace Shadowsocks.View
             ServersListBox.Items.Clear();
             foreach (Server server in configuration.configs)
             {
-                ServersListBox.Items.Add(server.FriendlyName());
+                ServersListBox.Items.Add(server.ToString());
             }
         }
 
         private void LoadCurrentConfiguration()
         {
-            _modifiedConfiguration = controller.GetConfigurationCopy();
+            _modifiedConfiguration = controller.GetCurrentConfiguration();
             LoadServerNameListToUI(_modifiedConfiguration);
 
             _lastSelectedIndex = _modifiedConfiguration.index;
@@ -502,7 +486,7 @@ namespace Shadowsocks.View
             }
             if (_lastSelectedIndex >= 0 && _lastSelectedIndex < _modifiedConfiguration.configs.Count)
             {
-                ServersListBox.Items[_lastSelectedIndex] = _modifiedConfiguration.configs[_lastSelectedIndex].FriendlyName();
+                ServersListBox.Items[_lastSelectedIndex] = _modifiedConfiguration.configs[_lastSelectedIndex].ToString();
             }
             UpdateButtons();
             LoadSelectedServerDetails();
@@ -628,6 +612,11 @@ namespace Shadowsocks.View
         private void UsePluginArgCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             ShowHidePluginArgInput(NeedPluginArgCheckBox.Checked);
+        }
+
+        private void EncryptionSelect_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

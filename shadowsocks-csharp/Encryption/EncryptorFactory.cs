@@ -17,6 +17,8 @@ namespace Shadowsocks.Encryption
         {
             var AEADMbedTLSEncryptorSupportedCiphers = AEADMbedTLSEncryptor.SupportedCiphers();
             var AEADSodiumEncryptorSupportedCiphers = AEADSodiumEncryptor.SupportedCiphers();
+            var PlainEncryptorSupportedCiphers = PlainEncryptor.SupportedCiphers();
+
             if (Sodium.AES256GCMAvailable)
             {
                 // prefer to aes-256-gcm in libsodium
@@ -26,26 +28,6 @@ namespace Shadowsocks.Encryption
             {
                 AEADSodiumEncryptorSupportedCiphers.Remove("aes-256-gcm");
             }
-
-            // XXX: sequence matters, OpenSSL > Sodium > MbedTLS
-            foreach (string method in StreamOpenSSLEncryptor.SupportedCiphers())
-            {
-                if (!_registeredEncryptors.ContainsKey(method))
-                    _registeredEncryptors.Add(method, typeof(StreamOpenSSLEncryptor));
-            }
-
-            foreach (string method in StreamSodiumEncryptor.SupportedCiphers())
-            {
-                if (!_registeredEncryptors.ContainsKey(method))
-                    _registeredEncryptors.Add(method, typeof(StreamSodiumEncryptor));
-            }
-
-            foreach (string method in StreamMbedTLSEncryptor.SupportedCiphers())
-            {
-                if (!_registeredEncryptors.ContainsKey(method))
-                    _registeredEncryptors.Add(method, typeof(StreamMbedTLSEncryptor));
-            }
-
 
             foreach (string method in AEADOpenSSLEncryptor.SupportedCiphers())
             {
@@ -64,11 +46,17 @@ namespace Shadowsocks.Encryption
                 if (!_registeredEncryptors.ContainsKey(method))
                     _registeredEncryptors.Add(method, typeof(AEADMbedTLSEncryptor));
             }
+
+            foreach (string method in PlainEncryptorSupportedCiphers)
+            {
+                if (!_registeredEncryptors.ContainsKey(method))
+                    _registeredEncryptors.Add(method, typeof(PlainEncryptor));
+            }
         }
 
         public static IEncryptor GetEncryptor(string method, string password)
         {
-            if (method.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(method))
             {
                 method = Model.Server.DefaultMethod;
             }
